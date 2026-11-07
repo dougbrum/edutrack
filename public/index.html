@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduTrack — Sistema de Gestão de Aprendizagem</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
+:root{--blue:#2563eb;--blue-dark:#1d4ed8;--green:#16a34a;--red:#dc2626;--yellow:#d97706;
+      --gray:#64748b;--bg:#f0f4f8;--card:#fff;--border:#e2e8f0;--radius:10px}
+
+/* Layout */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--blue);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px #0003;position:sticky;top:0;z-index:100}
+.topbar-brand{font-weight:700;font-size:20px;letter-spacing:-.5px}
+.topbar-brand span{opacity:.7;font-weight:400;font-size:13px;margin-left:8px}
+.topbar-user{display:flex;align-items:center;gap:12px;font-size:14px}
+.badge{background:#fff3;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.btn-logout{background:#fff2;border:none;color:#fff;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:13px}
+.btn-logout:hover{background:#fff3}
+
+.main-layout{display:flex;flex:1}
+.sidebar{width:220px;background:#1e3a5f;min-height:calc(100vh - 60px);padding:16px 0;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#cbd5e1;font-size:14px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:#ffffff15;color:#fff}
+.nav-item.active{background:#ffffff20;color:#fff;border-left-color:#60a5fa}
+.nav-item .icon{font-size:18px;width:24px;text-align:center}
+.nav-sep{height:1px;background:#ffffff15;margin:8px 16px}
+.nav-label{font-size:11px;color:#64748b;padding:12px 20px 4px;text-transform:uppercase;letter-spacing:.5px}
+
+.content{flex:1;padding:28px;overflow:auto}
+.page-title{font-size:22px;font-weight:700;color:#1e293b;margin-bottom:4px}
+.page-sub{font-size:14px;color:var(--gray);margin-bottom:24px}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 4px #0001;border:1px solid var(--border);padding:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:600;color:#1e293b}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.stat-value{font-size:32px;font-weight:700;color:var(--blue)}
+.stat-label{font-size:13px;color:var(--gray)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}.sidebar{display:none}}
+
+/* Tables */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;padding:10px 14px;background:#f8fafc;color:#475569;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:#374151}
+tr:hover td{background:#f8fafc}
+.tag{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.tag-green{background:#dcfce7;color:#166534}
+.tag-red{background:#fee2e2;color:#991b1b}
+.tag-yellow{background:#fef3c7;color:#92400e}
+.tag-blue{background:#dbeafe;color:#1e40af}
+.tag-gray{background:#f1f5f9;color:#475569}
+
+/* Forms & Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:7px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-dark)}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-outline{background:#fff;color:#374151;border:1px solid var(--border)}.btn-outline:hover{background:#f8fafc}
+.btn-sm{padding:5px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.form-group{margin-bottom:16px}
+label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:14px;outline:none;transition:border .15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2563eb20}
+textarea{min-height:90px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:#0006;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px #0003}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:20px;color:#1e293b}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* Login */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%)}
+.login-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px #0003}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{font-size:28px;font-weight:800;color:var(--blue)}
+.login-logo p{color:var(--gray);font-size:14px;margin-top:4px}
+.login-hint{background:#f0f7ff;border-radius:8px;padding:12px;font-size:12px;color:#374151;margin-top:16px;line-height:1.6}
+.login-hint strong{display:block;margin-bottom:4px;color:var(--blue)}
+
+/* Alerts */
+.alert{padding:12px 16px;border-radius:8px;font-size:14px;margin-bottom:16px}
+.alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.alert-success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.alert-info{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+
+/* Nota input */
+.nota-input{width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:14px}
+.nota-input:focus{border-color:var(--blue);outline:none}
+
+/* Boletim */
+.boletim-header{background:linear-gradient(135deg,var(--blue),#1d4ed8);color:#fff;border-radius:10px;padding:20px;margin-bottom:20px}
+.boletim-header h2{font-size:20px;font-weight:700}
+.boletim-header p{opacity:.8;font-size:14px;margin-top:4px}
+
+/* Comunicados */
+.comunicado-item{border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all .15s}
+.comunicado-item:hover{border-color:var(--blue);background:#f8fafc}
+.comunicado-item.lido{opacity:.7}
+.comunicado-titulo{font-weight:600;font-size:15px;color:#1e293b}
+.comunicado-meta{font-size:12px;color:var(--gray);margin-top:4px}
+.comunicado-corpo{font-size:14px;color:#374151;margin-top:10px;line-height:1.6}
+.dot-unread{width:8px;height:8px;background:var(--blue);border-radius:50%;display:inline-block;margin-right:8px}
+
+/* Empty state */
+.empty{text-align:center;padding:40px;color:var(--gray)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+
+/* Nota color */
+.nota-alta{color:#16a34a;font-weight:600}
+.nota-media{color:#d97706;font-weight:600}
+.nota-baixa{color:#dc2626;font-weight:600}
+
+/* Print */
+@media print{.sidebar,.topbar,.btn{display:none!important}.content{padding:0}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const {useState, useEffect, useCallback} = React;
+const API = "http://localhost:5000/api";
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.erro || "Erro na requisição");
+  return data;
+}
+
+// ── Color helpers ─────────────────────────────────────────────────────────────
+function notaClass(v) {
+  if (v == null) return "";
+  if (v >= 7) return "nota-alta";
+  if (v >= 5) return "nota-media";
+  return "nota-baixa";
+}
+function situacaoTag(s) {
+  if (!s || s === "—") return <span className="tag tag-gray">—</span>;
+  if (s === "Aprovado") return <span className="tag tag-green">Aprovado</span>;
+  if (s === "Recuperação") return <span className="tag tag-yellow">Recuperação</span>;
+  return <span className="tag tag-red">Reprovado</span>;
+}
+function perfilTag(p) {
+  const map = {admin:"tag-blue",professor:"tag-green",aluno:"tag-gray",responsavel:"tag-yellow"};
+  const label = {admin:"Admin",professor:"Professor",aluno:"Aluno",responsavel:"Responsável"};
+  return <span className={`tag ${map[p]||"tag-gray"}`}>{label[p]||p}</span>;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function Modal({title, onClose, children, footer}) {
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div className="modal-title" style={{marginBottom:0}}>{title}</div>
+          <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
+        </div>
+        {children}
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Login Page ────────────────────────────────────────────────────────────────
+function LoginPage({onLogin}) {
+  const [form, setForm] = useState({email:"admin@edutrack.com",senha:"admin123"});
+  const [erro, setErro] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true); setErro("");
+    try {
+      const data = await api("/login", {method:"POST", body: form});
+      localStorage.setItem("token", data.token);
+      onLogin(data.usuario);
+    } catch(err) {
+      setErro(err.message);
+    } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">
+          <h1>📚 EduTrack</h1>
+          <p>Sistema de Gestão de Aprendizagem</p>
+        </div>
+        {erro && <div className="alert alert-error">{erro}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>E-mail</label>
+            <input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/>
+          </div>
+          <div className="form-group">
+            <label>Senha</label>
+            <input type="password" value={form.senha} onChange={e=>setForm({...form,senha:e.target.value})} required/>
+          </div>
+          <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+        <div className="login-hint">
+          <strong>👤 Logins de demonstração:</strong>
+          Admin: admin@edutrack.com / admin123<br/>
+          Professor: ana@edutrack.com / prof123<br/>
+          Aluno: joao@edutrack.com / aluno123
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function Dashboard({user}) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    api("/dashboard").then(setStats).catch(()=>{});
+  }, []);
+
+  if (!stats) return <div className="empty"><div className="empty-icon">⏳</div>Carregando...</div>;
+
+  if (user.perfil === "admin") return (
+    <div>
+      <div className="page-title">Painel Administrativo</div>
+      <div className="page-sub">Bem-vindo, {user.nome}</div>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-value">{stats.total_alunos}</div><div className="stat-label">Alunos Ativos</div></div>
+        <div className="stat-card"><div className="stat-value">{stats.total_professores}</div><div className="stat-label">Professores</div></div>
+        <div className="stat-card"><div className="stat-value">{stats.total_turmas}</div><div className="stat-label">Turmas</div></div>
+        <div className="stat-card"><div className="stat-value">{stats.total_disciplinas}</div><div className="stat-label">Disciplinas</div></div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-title">📢 Comunicados Recentes</div></div>
+        {stats.comunicados_recentes?.length === 0
+          ? <div className="empty">Nenhum comunicado</div>
+          : stats.comunicados_recentes?.map((c,i) => (
+              <div key={i} style={{padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                <div style={{fontWeight:600,fontSize:14}}>{c.titulo}</div>
+                <div style={{fontSize:12,color:"var(--gray)"}}>{c.autor} · {new Date(c.criado_em).toLocaleDateString("pt-BR")}</div>
+              </div>
+            ))}
+      </div>
+    </div>
+  );
+
+  if (user.perfil === "professor") return (
+    <div>
+      <div className="page-title">Painel do Professor</div>
+      <div className="page-sub">Bem-vindo, {user.nome}</div>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-value">{stats.minhas_turmas}</div><div className="stat-label">Minhas Turmas</div></div>
+        <div className="stat-card"><div className="stat-value">{stats.minhas_disciplinas}</div><div className="stat-label">Disciplinas</div></div>
+        <div className="stat-card"><div className="stat-value">{stats.total_alunos}</div><div className="stat-label">Total de Alunos</div></div>
+      </div>
+      <div className="alert alert-info">Use o menu lateral para lançar notas e frequências.</div>
+    </div>
+  );
+
+  // Aluno
+  return (
+    <div>
+      <div className="page-title">Meu Painel</div>
+      <div className="page-sub">Bem-vindo, {user.nome}</div>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-value" style={{color: stats.media_geral >= 7 ? "var(--green)" : stats.media_geral >= 5 ? "var(--yellow)" : "var(--red)"}}>
+            {stats.media_geral ?? "—"}
+          </div>
+          <div className="stat-label">Média Geral</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{color: (stats.frequencia_geral??0) >= 75 ? "var(--green)" : "var(--red)"}}>
+            {stats.frequencia_geral != null ? `${stats.frequencia_geral}%` : "—"}
+          </div>
+          <div className="stat-label">Frequência Geral</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{fontSize:18,paddingTop:6}}>{stats.minha_turma?.nome ?? "—"}</div>
+          <div className="stat-label">Minha Turma</div>
+        </div>
+      </div>
+      <div className="alert alert-info">Acesse "Meu Boletim" no menu para ver suas notas detalhadas.</div>
+    </div>
+  );
+}
+
+// ── Usuarios (Admin) ──────────────────────────────────────────────────────────
+function Usuarios() {
+  const [lista, setLista] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({nome:"",email:"",senha:"",perfil:"aluno"});
+  const [msg, setMsg] = useState("");
+
+  const load = () => api("/usuarios").then(setLista).catch(()=>{});
+  useEffect(()=>{ load(); },[]);
+
+  async function criar(e) {
+    e.preventDefault();
+    try {
+      await api("/usuarios", {method:"POST", body:form});
+      setMsg("Usuário criado com sucesso!"); setModal(false);
+      setForm({nome:"",email:"",senha:"",perfil:"aluno"}); load();
+    } catch(err) { setMsg(err.message); }
+  }
+
+  async function desativar(id) {
+    if (!confirm("Desativar este usuário?")) return;
+    await api(`/usuarios/${id}`, {method:"DELETE"});
+    load();
+  }
+
+  return (
+    <div>
+      <div className="page-title">Usuários</div>
+      <div className="page-sub">Gerenciar todos os usuários do sistema</div>
+      {msg && <div className="alert alert-success">{msg}</div>}
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title">Lista de Usuários</div>
+          <button className="btn btn-primary btn-sm" onClick={()=>setModal(true)}>+ Novo Usuário</button>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>
+              {lista.map(u => (
+                <tr key={u.id}>
+                  <td>{u.nome}</td>
+                  <td style={{color:"var(--gray)"}}>{u.email}</td>
+                  <td>{perfilTag(u.perfil)}</td>
+                  <td>{u.ativo ? <span className="tag tag-green">Ativo</span> : <span className="tag tag-red">Inativo</span>}</td>
+                  <td>
+                    {u.ativo && <button className="btn btn-outline btn-sm" onClick={()=>desativar(u.id)}>Desativar</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {modal && (
+        <Modal title="Novo Usuário" onClose={()=>setModal(false)}>
+          <form onSubmit={criar}>
+            <div className="form-group"><label>Nome Completo</label><input value={form.nome} onChange={e=>setForm({...form,nome:e.target.value})} required/></div>
+            <div className="form-group"><label>E-mail</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/></div>
+            <div className="form-group"><label>Senha</label><input type="password" value={form.senha} onChange={e=>setForm({...form,senha:e.target.value})} required/></div>
+            <div className="form-group"><label>Perfil</label>
+              <select value={form.perfil} onChange={e=>setForm({...form,perfil:e.target.value})}>
+                <option value="aluno">Aluno</option>
+                <option value="professor">Professor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline" onClick={()=>setModal(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary">Criar Usuário</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Turmas ────────────────────────────────────────────────────────────────────
+function Turmas({user}) {
+  const [turmas, setTurmas] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [detalhe, setDetalhe] = useState(null);
+  const [form, setForm] = useState({nome:"",ano:"6",turno:"Matutino",ano_letivo:2026});
+
+  const load = () => api("/turmas").then(setTurmas).catch(()=>{});
+  useEffect(()=>{ load(); },[]);
+
+  async function criar(e) {
+    e.preventDefault();
+    await api("/turmas", {method:"POST", body:form});
+    setModal(false); load();
+  }
+
+  return (
+    <div>
+      <div className="page-title">Turmas</div>
+      <div className="page-sub">Gerenciar turmas e matrículas</div>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title">Turmas Ativas — 2026</div>
+          {user.perfil==="admin" && <button className="btn btn-primary btn-sm" onClick={()=>setModal(true)}>+ Nova Turma</button>}
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Turma</th><th>Ano</th><th>Turno</th><th>Ano Letivo</th><th>Ações</th></tr></thead>
+            <tbody>
+              {turmas.map(t => (
+                <tr key={t.id}>
+                  <td><strong>{t.nome}</strong></td>
+                  <td>{t.ano}º Ano</td>
+                  <td><span className="tag tag-blue">{t.turno}</span></td>
+                  <td>{t.ano_letivo}</td>
+                  <td><button className="btn btn-outline btn-sm" onClick={()=>setDetalhe(t)}>Detalhe</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {modal && (
+        <Modal title="Nova Turma" onClose={()=>setModal(false)}>
+          <form onSubmit={criar}>
+            <div className="form-group"><label>Nome</label><input placeholder="Ex: 6º Ano A" value={form.nome} onChange={e=>setForm({...form,nome:e.target.value})} required/></div>
+            <div className="form-row">
+              <div className="form-group"><label>Ano</label>
+                <select value={form.ano} onChange={e=>setForm({...form,ano:e.target.value})}>
+                  {[1,2,3,4,5,6,7,8,9].map(a=><option key={a} value={a}>{a}º Ano</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Turno</label>
+                <select value={form.turno} onChange={e=>setForm({...form,turno:e.target.value})}>
+                  <option>Matutino</option><option>Vespertino</option><option>Noturno</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group"><label>Ano Letivo</label><input type="number" value={form.ano_letivo} onChange={e=>setForm({...form,ano_letivo:parseInt(e.target.value)})}/></div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline" onClick={()=>setModal(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary">Criar</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {detalhe && <TurmaDetalhe turma={detalhe} user={user} onClose={()=>setDetalhe(null)}/>}
+    </div>
+  );
+}
+
+function TurmaDetalhe({turma, user, onClose}) {
+  const [alunos, setAlunos] = useState([]);
+  const [discs, setDiscs] = useState([]);
+  const [todosAlunos, setTodosAlunos] = useState([]);
+  const [form, setForm] = useState({aluno_id:""});
+
+  useEffect(()=>{
+    api(`/turmas/${turma.id}/alunos`).then(setAlunos);
+    api(`/turmas/${turma.id}/disciplinas`).then(setDiscs);
+    if(user.perfil==="admin") api("/usuarios?perfil=aluno").then(setTodosAlunos);
+  },[turma.id]);
+
+  async function matricular() {
+    if(!form.aluno_id) return;
+    await api(`/turmas/${turma.id}/alunos`, {method:"POST", body:{aluno_id:parseInt(form.aluno_id)}});
+    api(`/turmas/${turma.id}/alunos`).then(setAlunos);
+  }
+
+  async function desmatricular(aid) {
+    if(!confirm("Remover aluno da turma?")) return;
+    await api(`/turmas/${turma.id}/alunos/${aid}`, {method:"DELETE"});
+    api(`/turmas/${turma.id}/alunos`).then(setAlunos);
+  }
+
+  return (
+    <Modal title={`Turma: ${turma.nome}`} onClose={onClose}>
+      <div style={{marginBottom:16}}>
+        <div className="card-title" style={{marginBottom:10}}>📚 Disciplinas</div>
+        {discs.map(d=>(
+          <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:14}}>
+            <span>{d.nome}</span><span style={{color:"var(--gray)"}}>{d.professor_nome}</span>
+          </div>
+        ))}
+      </div>
+      <div>
+        <div className="card-title" style={{marginBottom:10}}>👥 Alunos Matriculados ({alunos.length})</div>
+        {alunos.map(a=>(
+          <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:14}}>
+            <span>{a.nome}</span>
+            {user.perfil==="admin" && <button className="btn btn-outline btn-sm" onClick={()=>desmatricular(a.id)}>Remover</button>}
+          </div>
+        ))}
+        {user.perfil==="admin" && (
+          <div style={{marginTop:12,display:"flex",gap:8}}>
+            <select value={form.aluno_id} onChange={e=>setForm({aluno_id:e.target.value})} style={{flex:1}}>
+              <option value="">Selecionar aluno...</option>
+              {todosAlunos.filter(a=>!alunos.find(x=>x.id===a.id)).map(a=><option key={a.id} value={a.id}>{a.nome}</option>)}
+            </select>
+            <button className="btn btn-primary btn-sm" onClick={matricular}>Matricular</button>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// ── Lançar Notas ──────────────────────────────────────────────────────────────
+function LancarNotas({user}) {
+  const [turmas, setTurmas] = useState([]);
+  const [turmaId, setTurmaId] = useState("");
+  const [discId, setDiscId] = useState("");
+  const [bimestre, setBimestre] = useState(1);
+  const [discs, setDiscs] = useState([]);
+  const [alunos, setAlunos] = useState([]);
+  const [notasMap, setNotasMap] = useState({});
+  const [salvando, setSalvando] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(()=>{ api("/turmas").then(setTurmas); },[]);
+
+  useEffect(()=>{
+    if(!turmaId) return;
+    api(`/turmas/${turmaId}/disciplinas`).then(setDiscs);
+    api(`/turmas/${turmaId}/alunos`).then(setAlunos);
+  },[turmaId]);
+
+  useEffect(()=>{
+    if(!turmaId||!discId) return;
+    api(`/notas?turma_id=${turmaId}&disciplina_id=${discId}`).then(rows=>{
+      const m = {};
+      rows.filter(r=>r.bimestre===bimestre).forEach(r=>{ m[r.aluno_id]=r.nota; });
+      setNotasMap(m);
+    });
+  },[turmaId,discId,bimestre]);
+
+  async function salvar() {
+    setSalvando(true); setMsg("");
+    const items = alunos.map(a=>({
+      aluno_id:a.id, turma_id:parseInt(turmaId),
+      disciplina_id:parseInt(discId), bimestre,
+      nota: parseFloat(notasMap[a.id]||0)
+    })).filter(x=>!isNaN(x.nota));
+    await api("/notas/bulk", {method:"POST", body:items});
+    setMsg("Notas salvas com sucesso!"); setSalvando(false);
+  }
+
+  return (
+    <div>
+      <div className="page-title">Lançar Notas</div>
+      <div className="page-sub">Registrar notas bimestrais por disciplina</div>
+      {msg && <div className="alert alert-success">{msg}</div>}
+      <div className="card" style={{marginBottom:20}}>
+        <div className="form-row" style={{gridTemplateColumns:"1fr 1fr 1fr"}}>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Turma</label>
+            <select value={turmaId} onChange={e=>{setTurmaId(e.target.value);setDiscId("");}}>
+              <option value="">Selecione...</option>
+              {turmas.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Disciplina</label>
+            <select value={discId} onChange={e=>setDiscId(e.target.value)} disabled={!turmaId}>
+              <option value="">Selecione...</option>
+              {discs.map(d=><option key={d.id} value={d.id}>{d.nome}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Bimestre</label>
+            <select value={bimestre} onChange={e=>setBimestre(parseInt(e.target.value))}>
+              {[1,2,3,4].map(b=><option key={b} value={b}>{b}º Bimestre</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+      {turmaId && discId && alunos.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Notas — {bimestre}º Bimestre</div>
+            <button className="btn btn-success" onClick={salvar} disabled={salvando}>
+              {salvando ? "Salvando..." : "💾 Salvar Notas"}
+            </button>
+          </div>
+          <table>
+            <thead><tr><th>Aluno</th><th>Nota (0-10)</th></tr></thead>
+            <tbody>
+              {alunos.map(a=>(
+                <tr key={a.id}>
+                  <td>{a.nome}</td>
+                  <td>
+                    <input type="number" min="0" max="10" step="0.1" className="nota-input"
+                      value={notasMap[a.id]??""} placeholder="—"
+                      onChange={e=>setNotasMap({...notasMap,[a.id]:e.target.value})}/>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {turmaId && discId && alunos.length === 0 && (
+        <div className="empty"><div className="empty-icon">👥</div>Nenhum aluno matriculado nesta turma.</div>
+      )}
+    </div>
+  );
+}
+
+// ── Frequência ────────────────────────────────────────────────────────────────
+function LancarFrequencia({user}) {
+  const [turmas, setTurmas] = useState([]);
+  const [turmaId, setTurmaId] = useState("");
+  const [discId, setDiscId] = useState("");
+  const [data, setData] = useState(new Date().toISOString().split("T")[0]);
+  const [discs, setDiscs] = useState([]);
+  const [alunos, setAlunos] = useState([]);
+  const [presMap, setPresMap] = useState({});
+  const [msg, setMsg] = useState("");
+
+  useEffect(()=>{ api("/turmas").then(setTurmas); },[]);
+  useEffect(()=>{
+    if(!turmaId) return;
+    api(`/turmas/${turmaId}/disciplinas`).then(setDiscs);
+    api(`/turmas/${turmaId}/alunos`).then(rows=>{
+      setAlunos(rows);
+      const m = {}; rows.forEach(a=>{m[a.id]=1;}); setPresMap(m);
+    });
+  },[turmaId]);
+
+  async function salvar() {
+    const items = alunos.map(a=>({
+      aluno_id:a.id, turma_id:parseInt(turmaId),
+      disciplina_id:parseInt(discId), data, presente:presMap[a.id]??1
+    }));
+    await api("/frequencias/bulk", {method:"POST", body:items});
+    setMsg("Frequência registrada!");
+  }
+
+  const presentes = Object.values(presMap).filter(v=>v===1).length;
+
+  return (
+    <div>
+      <div className="page-title">Registrar Frequência</div>
+      <div className="page-sub">Chamada diária por disciplina</div>
+      {msg && <div className="alert alert-success">{msg}</div>}
+      <div className="card" style={{marginBottom:20}}>
+        <div className="form-row" style={{gridTemplateColumns:"1fr 1fr 1fr"}}>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Turma</label>
+            <select value={turmaId} onChange={e=>setTurmaId(e.target.value)}>
+              <option value="">Selecione...</option>
+              {turmas.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Disciplina</label>
+            <select value={discId} onChange={e=>setDiscId(e.target.value)} disabled={!turmaId}>
+              <option value="">Selecione...</option>
+              {discs.map(d=><option key={d.id} value={d.id}>{d.nome}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label>Data</label>
+            <input type="date" value={data} onChange={e=>setData(e.target.value)}/>
+          </div>
+        </div>
+      </div>
+      {turmaId && discId && alunos.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Chamada — {new Date(data+"T12:00").toLocaleDateString("pt-BR")}</div>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <span style={{fontSize:14,color:"var(--gray)"}}>{presentes}/{alunos.length} presentes</span>
+              <button className="btn btn-success" onClick={salvar}>💾 Salvar</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Aluno</th><th>Presença</th></tr></thead>
+            <tbody>
+              {alunos.map(a=>(
+                <tr key={a.id}>
+                  <td>{a.nome}</td>
+                  <td>
+                    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                      <input type="checkbox" checked={presMap[a.id]===1}
+                        onChange={e=>setPresMap({...presMap,[a.id]:e.target.checked?1:0})}
+                        style={{width:18,height:18}}/>
+                      <span className={`tag ${presMap[a.id]===1?"tag-green":"tag-red"}`}>
+                        {presMap[a.id]===1?"Presente":"Falta"}
+                      </span>
+                    </label>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Boletim ───────────────────────────────────────────────────────────────────
+function Boletim({user}) {
+  const [boletim, setBoletim] = useState(null);
+  const [alunos, setAlunos] = useState([]);
+  const [alunoId, setAlunoId] = useState(user.perfil==="aluno"?user.id:"");
+
+  useEffect(()=>{
+    if(user.perfil!=="aluno") api("/usuarios?perfil=aluno").then(setAlunos);
+    else api(`/relatorios/boletim/${user.id}`).then(setBoletim);
+  },[]);
+
+  function buscar() {
+    if(!alunoId) return;
+    api(`/relatorios/boletim/${alunoId}`).then(setBoletim);
+  }
+
+  return (
+    <div>
+      <div className="page-title">Boletim Escolar</div>
+      <div className="page-sub">Notas e situação por disciplina</div>
+      {user.perfil !== "aluno" && (
+        <div className="card" style={{marginBottom:20,display:"flex",gap:12,alignItems:"flex-end"}}>
+          <div className="form-group" style={{marginBottom:0,flex:1}}>
+            <label>Selecionar Aluno</label>
+            <select value={alunoId} onChange={e=>setAlunoId(e.target.value)}>
+              <option value="">Selecione...</option>
+              {alunos.map(a=><option key={a.id} value={a.id}>{a.nome}</option>)}
+            </select>
+          </div>
+          <button className="btn btn-primary" onClick={buscar}>Ver Boletim</button>
+        </div>
+      )}
+      {boletim && (
+        <div>
+          <div className="boletim-header">
+            <h2>📋 {boletim.aluno.nome}</h2>
+            <p>{boletim.aluno.email} · Ano Letivo 2026</p>
+          </div>
+          {boletim.turmas.map((t,i)=>(
+            <div key={i} className="card" style={{marginBottom:16}}>
+              <div className="card-title" style={{marginBottom:16}}>🎓 {t.turma.nome}</div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Disciplina</th><th>1º Bim</th><th>2º Bim</th><th>3º Bim</th><th>4º Bim</th><th>Média</th><th>Freq.</th><th>Situação</th></tr>
+                  </thead>
+                  <tbody>
+                    {t.disciplinas.map((d,j)=>(
+                      <tr key={j}>
+                        <td><strong>{d.disciplina}</strong></td>
+                        {[d.b1,d.b2,d.b3,d.b4].map((v,k)=>(
+                          <td key={k}><span className={notaClass(v)}>{v??<span style={{color:"var(--gray)"}}>—</span>}</span></td>
+                        ))}
+                        <td><span className={notaClass(d.media)}>{d.media??<span style={{color:"var(--gray)"}}>—</span>}</span></td>
+                        <td>{d.frequencia!=null?`${d.frequencia}%`:"—"}</td>
+                        <td>{situacaoTag(d.situacao)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Relatório da Turma ────────────────────────────────────────────────────────
+function RelatorioTurma() {
+  const [turmas, setTurmas] = useState([]);
+  const [turmaId, setTurmaId] = useState("");
+  const [rel, setRel] = useState(null);
+
+  useEffect(()=>{ api("/turmas").then(setTurmas); },[]);
+
+  function buscar() {
+    if(!turmaId) return;
+    api(`/relatorios/turma/${turmaId}`).then(setRel);
+  }
+
+  return (
+    <div>
+      <div className="page-title">Relatório da Turma</div>
+      <div className="page-sub">Desempenho geral de todos os alunos</div>
+      <div className="card" style={{marginBottom:20,display:"flex",gap:12,alignItems:"flex-end"}}>
+        <div className="form-group" style={{marginBottom:0,flex:1}}>
+          <label>Turma</label>
+          <select value={turmaId} onChange={e=>setTurmaId(e.target.value)}>
+            <option value="">Selecione...</option>
+            {turmas.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-primary" onClick={buscar}>Gerar Relatório</button>
+      </div>
+      {rel && (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Aluno</th>{rel.disciplinas.map(d=><th key={d}>{d}</th>)}</tr>
+              </thead>
+              <tbody>
+                {rel.alunos.map((a,i)=>(
+                  <tr key={i}>
+                    <td><strong>{a.aluno}</strong></td>
+                    {rel.disciplinas.map(d=>(
+                      <td key={d}><span className={notaClass(a.medias[d])}>{a.medias[d]??<span style={{color:"var(--gray)"}}>—</span>}</span></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Comunicados ───────────────────────────────────────────────────────────────
+function Comunicados({user}) {
+  const [lista, setLista] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({titulo:"",corpo:"",turma_id:null});
+  const [expandido, setExpandido] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  const load = () => api("/comunicados").then(setLista).catch(()=>{});
+  useEffect(()=>{ load(); },[]);
+
+  async function marcarLido(id) {
+    await api(`/comunicados/${id}/lido`, {method:"POST"});
+    load();
+  }
+
+  async function criar(e) {
+    e.preventDefault();
+    await api("/comunicados", {method:"POST", body:form});
+    setModal(false); setForm({titulo:"",corpo:"",turma_id:null}); load();
+    setMsg("Comunicado publicado!");
+  }
+
+  const naoLidos = lista.filter(c=>!c.lido).length;
+
+  return (
+    <div>
+      <div className="page-title">Comunicados {naoLidos>0&&<span className="tag tag-blue">{naoLidos} novo{naoLidos>1?"s":""}</span>}</div>
+      <div className="page-sub">Avisos e mensagens da escola</div>
+      {msg && <div className="alert alert-success">{msg}</div>}
+      {(user.perfil==="admin"||user.perfil==="professor") && (
+        <div style={{marginBottom:16}}>
+          <button className="btn btn-primary" onClick={()=>setModal(true)}>+ Novo Comunicado</button>
+        </div>
+      )}
+      {lista.length === 0
+        ? <div className="empty"><div className="empty-icon">📭</div>Nenhum comunicado.</div>
+        : lista.map(c=>(
+          <div key={c.id} className={`comunicado-item ${c.lido?"lido":""}`}
+            onClick={()=>{ setExpandido(expandido===c.id?null:c.id); if(!c.lido) marcarLido(c.id); }}>
+            <div className="comunicado-titulo">
+              {!c.lido && <span className="dot-unread"/>}{c.titulo}
+            </div>
+            <div className="comunicado-meta">
+              {c.autor_nome} · {new Date(c.criado_em).toLocaleDateString("pt-BR")}
+              {c.lido && <span style={{marginLeft:8}} className="tag tag-gray">Lido</span>}
+            </div>
+            {expandido===c.id && <div className="comunicado-corpo">{c.corpo}</div>}
+          </div>
+        ))}
+      {modal && (
+        <Modal title="Novo Comunicado" onClose={()=>setModal(false)}>
+          <form onSubmit={criar}>
+            <div className="form-group"><label>Título</label><input value={form.titulo} onChange={e=>setForm({...form,titulo:e.target.value})} required/></div>
+            <div className="form-group"><label>Mensagem</label><textarea value={form.corpo} onChange={e=>setForm({...form,corpo:e.target.value})} required/></div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline" onClick={()=>setModal(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary">Publicar</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Sidebar & Nav ─────────────────────────────────────────────────────────────
+function Sidebar({page, setPage, user}) {
+  const adminNav = [
+    {id:"dashboard",icon:"🏠",label:"Dashboard"},
+    {id:"usuarios",icon:"👥",label:"Usuários"},
+    {id:"turmas",icon:"🎓",label:"Turmas"},
+    {sep:true},
+    {id:"relatorio",icon:"📊",label:"Relatório da Turma"},
+    {id:"boletim",icon:"📋",label:"Boletim"},
+    {sep:true},
+    {id:"comunicados",icon:"📢",label:"Comunicados"},
+  ];
+  const profNav = [
+    {id:"dashboard",icon:"🏠",label:"Dashboard"},
+    {id:"turmas",icon:"🎓",label:"Minhas Turmas"},
+    {sep:true},
+    {id:"notas",icon:"✏️",label:"Lançar Notas"},
+    {id:"frequencia",icon:"✅",label:"Frequência"},
+    {id:"boletim",icon:"📋",label:"Boletim do Aluno"},
+    {id:"relatorio",icon:"📊",label:"Relatório da Turma"},
+    {sep:true},
+    {id:"comunicados",icon:"📢",label:"Comunicados"},
+  ];
+  const alunoNav = [
+    {id:"dashboard",icon:"🏠",label:"Dashboard"},
+    {id:"boletim",icon:"📋",label:"Meu Boletim"},
+    {id:"comunicados",icon:"📢",label:"Comunicados"},
+  ];
+  const nav = user.perfil==="admin"?adminNav:user.perfil==="professor"?profNav:alunoNav;
+
+  return (
+    <div className="sidebar">
+      {nav.map((item,i)=>item.sep
+        ? <div key={i} className="nav-sep"/>
+        : <div key={item.id} className={`nav-item ${page===item.id?"active":""}`} onClick={()=>setPage(item.id)}>
+            <span className="icon">{item.icon}</span>{item.label}
+          </div>
+      )}
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState("dashboard");
+
+  useEffect(()=>{
+    const token = localStorage.getItem("token");
+    if(token) api("/me").then(setUser).catch(()=>localStorage.removeItem("token"));
+  },[]);
+
+  function logout() {
+    localStorage.removeItem("token");
+    setUser(null); setPage("dashboard");
+  }
+
+  if(!user) return <LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}}/>;
+
+  function renderPage() {
+    switch(page) {
+      case "dashboard": return <Dashboard user={user}/>;
+      case "usuarios":  return <Usuarios/>;
+      case "turmas":    return <Turmas user={user}/>;
+      case "notas":     return <LancarNotas user={user}/>;
+      case "frequencia":return <LancarFrequencia user={user}/>;
+      case "boletim":   return <Boletim user={user}/>;
+      case "relatorio": return <RelatorioTurma/>;
+      case "comunicados":return <Comunicados user={user}/>;
+      default: return <Dashboard user={user}/>;
+    }
+  }
+
+  return (
+    <div className="app">
+      <div className="topbar">
+        <div className="topbar-brand">📚 EduTrack <span>Gestão de Aprendizagem</span></div>
+        <div className="topbar-user">
+          <span>{user.nome}</span>
+          <span className="badge">{user.perfil}</span>
+          <button className="btn-logout" onClick={logout}>Sair</button>
+        </div>
+      </div>
+      <div className="main-layout">
+        <Sidebar page={page} setPage={setPage} user={user}/>
+        <div className="content">{renderPage()}</div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
